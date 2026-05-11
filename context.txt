@@ -1,0 +1,23 @@
+Project Title:
+Highly Available Containerized Web App with Centralized Monitoring and Logging
+
+
+"Develop a simple multi-tier web application with a PostgreSQL backend.
+Write Docker Compose file.
+Deploy NGINX as a reverse proxy with load balancing and rate limiting capabilities.
+Deploy Prometheus to collect metrics from containers and the host system.
+Deploy Grafana to visualize system health and request rates.
+Deploy Loki and Promtail to aggregate all container logs in one interface.
+Create a CI/CD pipeline with GitHub Actions to automate testing and deployment."
+
+Technology stack:
+"Python Flask
+PostgreSQL
+Docker Compose
+NGINX
+Prometheus
+Grafana
+Grafana Loki
+Promtail
+GitHub Actions"
+
