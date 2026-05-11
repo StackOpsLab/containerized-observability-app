@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+backups/*.sql
+backups/*.sql.gz
+
