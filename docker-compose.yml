@@ -1,0 +1,146 @@
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app_db}
+      POSTGRES_USER: ${POSTGRES_USER:-app_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-app_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+      - ./backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-app_user} -d ${POSTGRES_DB:-app_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  app1:
+    build:
+      context: ./app
+    image: sna-flask-app:latest
+    environment:
+      APP_NAME: ${APP_NAME:-sna-demo-app}
+      APP_INSTANCE_ID: app-1
+      PORT: "8000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-app_db}
+      DB_CONNECT_RETRIES: ${DB_CONNECT_RETRIES:-20}
+      DB_CONNECT_DELAY: ${DB_CONNECT_DELAY:-2}
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  app2:
+    build:
+      context: ./app
+    image: sna-flask-app:latest
+    environment:
+      APP_NAME: ${APP_NAME:-sna-demo-app}
+      APP_INSTANCE_ID: app-2
+      PORT: "8000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-app_db}
+      DB_CONNECT_RETRIES: ${DB_CONNECT_RETRIES:-20}
+      DB_CONNECT_DELAY: ${DB_CONNECT_DELAY:-2}
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  app3:
+    build:
+      context: ./app
+    image: sna-flask-app:latest
+    environment:
+      APP_NAME: ${APP_NAME:-sna-demo-app}
+      APP_INSTANCE_ID: app-3
+      PORT: "8000"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-app_user}:${POSTGRES_PASSWORD:-app_password}@postgres:5432/${POSTGRES_DB:-app_db}
+      DB_CONNECT_RETRIES: ${DB_CONNECT_RETRIES:-20}
+      DB_CONNECT_DELAY: ${DB_CONNECT_DELAY:-2}
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "${NGINX_HTTP_PORT:-80}:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/upstreams/round-robin.conf:/etc/nginx/conf.d/01-upstream.conf:ro
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/02-default.conf:ro
+      - ./nginx/conf.d/metrics.conf:/etc/nginx/conf.d/03-metrics.conf:ro
+    depends_on:
+      app1:
+        condition: service_healthy
+      app2:
+        condition: service_healthy
+      app3:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.5.1
+    command:
+      - --nginx.scrape-uri=http://nginx:8080/stub_status
+    expose:
+      - "9113"
+    ports:
+      - "${NGINX_EXPORTER_PORT:-9113}:9113"
+    depends_on:
+      nginx:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
