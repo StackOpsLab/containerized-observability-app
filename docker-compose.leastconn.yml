@@ -1,0 +1,15 @@
+
+services:
+  nginx:
+    depends_on:
+      app1:
+        condition: service_healthy
+      app2:
+        condition: service_healthy
+      app3:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/upstreams/least-connections.conf:/etc/nginx/conf.d/01-upstream.conf:ro
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/02-default.conf:ro
+      - ./nginx/conf.d/metrics.conf:/etc/nginx/conf.d/03-metrics.conf:ro
