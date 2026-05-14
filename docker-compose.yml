@@ -1,5 +1,5 @@
-
 services:
+  # ── Data layer ──────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     environment:
@@ -18,7 +18,8 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  app1:
+  # ── Application replicas ────────────────────────────
+  app1: &app-template
     build:
       context: ./app
     image: sna-flask-app:latest
@@ -36,13 +37,7 @@ services:
     expose:
       - "8000"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
-        ]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -50,9 +45,7 @@ services:
     restart: unless-stopped
 
   app2:
-    build:
-      context: ./app
-    image: sna-flask-app:latest
+    <<: *app-template
     environment:
       APP_NAME: ${APP_NAME:-sna-demo-app}
       APP_INSTANCE_ID: app-2
@@ -61,29 +54,9 @@ services:
       DB_CONNECT_RETRIES: ${DB_CONNECT_RETRIES:-20}
       DB_CONNECT_DELAY: ${DB_CONNECT_DELAY:-2}
       DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    expose:
-      - "8000"
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    restart: unless-stopped
 
   app3:
-    build:
-      context: ./app
-    image: sna-flask-app:latest
+    <<: *app-template
     environment:
       APP_NAME: ${APP_NAME:-sna-demo-app}
       APP_INSTANCE_ID: app-3
@@ -92,31 +65,15 @@ services:
       DB_CONNECT_RETRIES: ${DB_CONNECT_RETRIES:-20}
       DB_CONNECT_DELAY: ${DB_CONNECT_DELAY:-2}
       DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    expose:
-      - "8000"
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()",
-        ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-    restart: unless-stopped
 
+  # ── Reverse proxy & exporter ────────────────────────
   nginx:
     image: nginx:1.27-alpine
     ports:
       - "${NGINX_HTTP_PORT:-80}:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      # Default: round-robin. Override file changes this to least-connections.
       - ./nginx/upstreams/round-robin.conf:/etc/nginx/conf.d/01-upstream.conf:ro
       - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/02-default.conf:ro
       - ./nginx/conf.d/metrics.conf:/etc/nginx/conf.d/03-metrics.conf:ro
@@ -142,5 +99,73 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  # ── Monitoring (Member B) ───────────────────────────
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: grafana
+    volumes:
+      - ./monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./monitoring/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./monitoring/grafana/dashboards/flask-app.json:/var/lib/grafana/dashboards/flask-app.json
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: loki
+    volumes:
+      - ./monitoring/loki/local-config.yaml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: promtail
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./monitoring/promtail/config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+
+  # ── Load testing (optional) ─────────────────────────
+  loadtester:
+    build:
+      context: ./loadtest
+    image: sna-loadtester:latest
+    profiles:
+      - loadtest          # Only starts with --profile loadtest
+    environment:
+      TARGET_URL: ${LOADTEST_TARGET_URL:-http://nginx}
+      REQUESTS_PER_SECOND: ${LOADTEST_RPS:-50}
+    depends_on:
+      - nginx
+    restart: "no"
+
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:
+  loki_data:
