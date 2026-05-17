@@ -17,7 +17,7 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
-          "expr": "rate(flask_http_request_total[1m])",
+          "expr": "sum by (method) (rate(flask_http_request_total[1m]))",
           "legendFormat": "{{method}}"
         }
       ],
@@ -51,7 +51,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
       "targets": [
         {
-          "expr": "app_visit_events_total"
+          "expr": "sum(app_visit_events_total)"
         }
       ]
     },
@@ -62,7 +62,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
       "targets": [
         {
-          "expr": "app_messages_created_total"
+          "expr": "sum(app_messages_created_total)"
         }
       ]
     },
@@ -73,7 +73,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
       "targets": [
         {
-          "expr": "process_resident_memory_bytes"
+          "expr": "sum(process_resident_memory_bytes)"
         }
       ],
       "fieldConfig": {
@@ -81,6 +81,17 @@
           "unit": "bytes"
         }
       }
+    },
+    {
+      "id": 6,
+      "title": "NGINX Active Connections",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "targets": [
+        {
+          "expr": "nginx_connections_active"
+        }
+      ]
     }
   ]
 }

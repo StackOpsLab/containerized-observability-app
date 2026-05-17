@@ -1,0 +1,102 @@
+{
+  "uid": "infra-overview-dashboard",
+  "title": "Infrastructure Overview",
+  "tags": ["infrastructure", "prometheus"],
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "refresh": "10s",
+  "time": {
+    "from": "now-15m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Host CPU Usage",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Host Memory Usage",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Prometheus Targets Up",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(up)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Observed Compose Containers",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "targets": [
+        {
+          "expr": "count(container_last_seen{container_label_com_docker_compose_service!=\"\"})"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Container CPU Usage (by service)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum by (container_label_com_docker_compose_service) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service!=\"\"}[5m]))",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "cores"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Container Memory (by service)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "targets": [
+        {
+          "expr": "sum by (container_label_com_docker_compose_service) (container_memory_working_set_bytes{container_label_com_docker_compose_service!=\"\"})",
+          "legendFormat": "{{container_label_com_docker_compose_service}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      }
+    }
+  ]
+}
