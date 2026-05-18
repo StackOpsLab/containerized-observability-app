@@ -47,7 +47,7 @@ jobs:
         run: chmod +x scripts/*.sh
 
       - name: Start full stack
-        run: docker compose up -d --build
+        run: docker compose up -d --build --wait --wait-timeout 120
 
       - name: Run smoke test
         run: ./scripts/smoke_test.sh

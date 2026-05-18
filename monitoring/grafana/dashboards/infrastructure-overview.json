@@ -60,7 +60,7 @@
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "targets": [
         {
-          "expr": "count(container_last_seen{id=~\"/docker/[a-f0-9]+\"})"
+          "expr": "count(container_last_seen{id=~\".*[a-f0-9]{12,}.*\"})"
         }
       ]
     },
@@ -71,8 +71,8 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "targets": [
         {
-          "expr": "sum by (container_id) (label_replace(rate(container_cpu_usage_seconds_total{id=~\"/docker/[a-f0-9]+\",cpu=\"total\"}[5m]), \"container_id\", \"$1\", \"id\", \"/docker/([a-f0-9]{12}).*\"))",
-          "legendFormat": "{{container_id}}"
+          "expr": "sum by (id) (rate(container_cpu_usage_seconds_total{id=~\".*[a-f0-9]{12,}.*\",cpu=\"total\"}[5m]))",
+          "legendFormat": "{{id}}"
         }
       ],
       "fieldConfig": {
@@ -88,8 +88,8 @@
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "targets": [
         {
-          "expr": "sum by (container_id) (label_replace(container_memory_working_set_bytes{id=~\"/docker/[a-f0-9]+\"}, \"container_id\", \"$1\", \"id\", \"/docker/([a-f0-9]{12}).*\"))",
-          "legendFormat": "{{container_id}}"
+          "expr": "sum by (id) (container_memory_working_set_bytes{id=~\".*[a-f0-9]{12,}.*\"})",
+          "legendFormat": "{{id}}"
         }
       ],
       "fieldConfig": {
