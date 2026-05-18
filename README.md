@@ -118,10 +118,12 @@ Grafana dashboards:
 
 Logs are viewed in Grafana Explore through the Loki datasource.
 
+In `Explore`, switch the datasource from `Prometheus` to `Loki` first.
+
 Example Loki query in Grafana Explore:
 
 ```logql
-{container=~"containerized-observability-app.*"}
+{compose_service=~".+"}
 ```
 
 ## Load test

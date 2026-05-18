@@ -154,18 +154,25 @@ while time.time() < deadline:
     seen_jobs = {job for job, _ in targets}
     node_payload = query("node_cpu_seconds_total")
     cadvisor_payload = query("container_cpu_usage_seconds_total")
+    compose_label_payload = query(
+        'count(container_last_seen{container_label_com_docker_compose_service!=""})'
+    )
+    compose_label_count = 0
+    if compose_label_payload["data"]["result"]:
+        compose_label_count = int(float(compose_label_payload["data"]["result"][0]["value"][1]))
 
     if (
         required_jobs.issubset(seen_jobs)
         and all(value == "1" for value in targets.values())
         and node_payload["data"]["result"]
         and cadvisor_payload["data"]["result"]
+        and compose_label_count > 0
     ):
         break
     time.sleep(2)
 else:
     raise SystemExit(
-        "Prometheus did not expose all required jobs and metrics within 60 seconds"
+        "Prometheus did not expose all required jobs, metrics, and Docker Compose labels within 60 seconds"
     )
 PY
 
@@ -202,21 +209,18 @@ PY
 
 echo "Checking Loki ingestion..."
 retry 30 2 curl -fsS "${LOKI_URL}/ready" >/dev/null
-loki_labels="$(curl -fsS "${LOKI_URL}/loki/api/v1/label/container/values")"
+loki_labels="$(curl -fsS "${LOKI_URL}/loki/api/v1/label/compose_service/values")"
 
 JSON_PAYLOAD="$loki_labels" python3 - <<'PY'
 import json
 import os
 
 payload = json.loads(os.environ["JSON_PAYLOAD"])
-containers = set(payload["data"])
-required_suffixes = {"-app1-1", "-app2-1", "-app3-1"}
-missing = {
-    suffix for suffix in required_suffixes
-    if not any(container.endswith(suffix) for container in containers)
-}
+services = set(payload["data"])
+required_services = {"app1", "app2", "app3", "nginx"}
+missing = required_services - services
 if missing:
-    raise SystemExit(f"Missing Loki container labels with suffixes: {sorted(missing)}")
+    raise SystemExit(f"Missing Loki compose_service labels: {sorted(missing)}")
 PY
 
 echo "Checking PostgreSQL backup flow..."
