@@ -92,6 +92,14 @@ If you want `least connections`:
 docker compose -f docker-compose.yml -f docker-compose.leastconn.yml up -d --build
 ```
 
+After that, run the load balancing check again, because Docker Compose recreates containers when switching the mode.
+
+To return to the default `round robin` mode:
+
+```bash
+docker compose up -d --build
+```
+
 ## Monitoring and logs
 
 Prometheus collects metrics from:
