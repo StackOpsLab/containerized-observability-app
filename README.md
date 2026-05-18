@@ -1,11 +1,11 @@
-# Student Project: Containerized Observability App
+# Containerized Observability App
 
 ## Project Topic
 
 **Highly Available Containerized Web App with Centralized Monitoring and Logging**
 
-This is a student project for Docker and observability practice.  
-We built a simple Flask web app with PostgreSQL, ran multiple replicas with Docker Compose, used NGINX as a reverse proxy, and added monitoring, logging, and CI/CD.
+This project is a simple Flask web app with PostgreSQL.  
+It runs multiple replicas with Docker Compose, uses NGINX as a reverse proxy, and includes monitoring, centralized logging, and CI/CD.
 
 ## Stack
 
@@ -21,7 +21,7 @@ We built a simple Flask web app with PostgreSQL, ran multiple replicas with Dock
 - cAdvisor
 - GitHub Actions
 
-## What is included
+## Features
 
 - Flask API
 - PostgreSQL database
