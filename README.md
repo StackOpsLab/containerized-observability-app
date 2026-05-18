@@ -1,58 +1,164 @@
-# Member C Deliverables
+# Containerized Observability App
 
-This repository contains the application and data-layer artifacts for the team project:
+## Project Topic
 
-- A Flask demo app with PostgreSQL integration.
-- A production-ready application Dockerfile.
-- PostgreSQL persistence and initialization assets.
-- A simple backup script based on `pg_dump`.
-- A containerized load generator for dashboards and log aggregation.
+**Highly Available Containerized Web App with Centralized Monitoring and Logging**
 
-## Project layout
+This project is a simple Flask web app with PostgreSQL.  
+It runs multiple replicas with Docker Compose, uses NGINX as a reverse proxy, and includes monitoring, centralized logging, and CI/CD.
 
-- `app/`: Flask application source and Dockerfile.
-- `loadtest/`: Async HTTP load generator and Dockerfile.
-- `database/init/`: SQL executed by the PostgreSQL container on first boot.
-- `scripts/backup_postgres.sh`: Creates compressed SQL backups into `./backups`.
-- `compose.member-c.yml`: Compose fragment for Member A to merge into the final stack.
+## Stack
 
-## Application endpoints
+- Python Flask
+- PostgreSQL
+- Docker Compose
+- NGINX
+- Prometheus
+- Grafana
+- Loki
+- Promtail
+- Node Exporter
+- cAdvisor
+- GitHub Actions
 
-- `GET /`: service info, hostname, instance id, and exposed routes.
-- `GET /health`: liveness endpoint.
-- `GET /ready`: readiness endpoint with live PostgreSQL probe.
-- `GET /api/visits`: persists a visit event and returns the running total.
-- `GET /api/messages`: returns the most recent messages.
-- `POST /api/messages`: inserts a new message row.
-- `GET /metrics`: Prometheus scrape endpoint for request and app metrics.
+## Features
 
-The app writes JSON logs to stdout, which makes it easy for Promtail/Loki or ELK to collect and index container logs.
+- Flask API
+- PostgreSQL database
+- 3 app replicas
+- NGINX load balancing and rate limiting
+- Prometheus and Grafana for metrics
+- Loki and Promtail for logs
+- Node Exporter and cAdvisor for host/container metrics
+- GitHub Actions CI/CD
+- PostgreSQL backup script
 
-## Local run
-
-1. Copy `.env.example` values into your local shell or a `.env` file.
-2. Start the app and database:
-
-```bash
-docker compose -f compose.member-c.yml up --build
-```
-
-3. Generate traffic for dashboards:
+## Run the project
 
 ```bash
-docker compose -f compose.member-c.yml --profile loadtest up --build loadtester
+cp .env.example .env
+docker compose up -d --build
 ```
 
-4. Create a PostgreSQL backup:
+## Useful links
+
+- App: `http://127.0.0.1/`
+- Grafana: `http://127.0.0.1:3000`
+- Prometheus: `http://127.0.0.1:9090`
+- Loki health check: `http://127.0.0.1:3100/ready`
+- NGINX exporter: `http://127.0.0.1:9113/metrics`
+
+Grafana login:
+
+- user: `admin`
+- password: `admin`
+
+## Quick check
 
 ```bash
-./scripts/backup_postgres.sh
+curl http://127.0.0.1/health
+curl http://127.0.0.1/ready
+curl http://127.0.0.1/api/visits
+curl http://127.0.0.1/api/messages
 ```
 
-## Handoff notes
+You can also run:
 
-- Member A can merge `compose.member-c.yml` into the final `docker-compose.yml`.
-- The PostgreSQL persistence volume is `postgres_data`.
-- The PostgreSQL initialization scripts live in `./database/init`.
-- Member B can scrape the Flask app at `http://app:8000/metrics`.
-- The load generator is meant to target NGINX in the final topology, so `TARGET_URL` defaults should point to the reverse proxy in the team compose file.
+```bash
+bash scripts/smoke_test.sh
+```
+
+## Load balancing
+
+Default mode is `round robin`.
+
+Check:
+
+```bash
+for i in $(seq 1 6); do
+  curl -s -D - http://127.0.0.1/ -o /dev/null | grep X-App-Instance
+done
+```
+
+PowerShell alternative:
+
+```powershell
+1..6 | ForEach-Object { (Invoke-WebRequest http://127.0.0.1/ -UseBasicParsing).Headers["X-App-Instance"] }
+```
+
+If you want `least connections`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.leastconn.yml up -d --build
+```
+
+After that, run the load balancing check again, because Docker Compose recreates containers when switching the mode.
+
+To return to the default `round robin` mode:
+
+```bash
+docker compose up -d --build
+```
+
+## Monitoring and logs
+
+Prometheus collects metrics from:
+
+- `app1`
+- `app2`
+- `app3`
+- `nginx-exporter`
+- `node-exporter`
+- `cadvisor`
+
+Grafana dashboards:
+
+- `Flask App Dashboard`
+- `Infrastructure Overview`
+
+Logs are viewed in Grafana Explore through the Loki datasource.
+
+In `Explore`, switch the datasource from `Prometheus` to `Loki` first.
+
+Example Loki query in Grafana Explore:
+
+```logql
+{compose_service=~".+"}
+```
+
+## Load test
+
+```bash
+docker compose --profile loadtest run --rm --no-deps loadtester
+```
+
+## Database backup
+
+```bash
+bash scripts/backup_postgres.sh
+```
+
+## CI/CD
+
+Workflow file:
+
+`.github/workflows/ci-cd.yml`
+
+The pipeline:
+
+- validates the project
+- starts the stack
+- runs the smoke test
+- publishes the app image on push to `main`
+
+## Stop the project
+
+```bash
+docker compose down
+```
+
+Full cleanup:
+
+```bash
+docker compose down -v
+```

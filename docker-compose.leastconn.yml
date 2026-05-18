@@ -1,0 +1,4 @@
+services:
+  nginx:
+    volumes:
+      - ./nginx/upstreams/least-connections.conf:/etc/nginx/conf.d/upstream.conf:ro

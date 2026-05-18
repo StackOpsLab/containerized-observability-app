@@ -1,0 +1,31 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'flask-app'
+    static_configs:
+    - targets:
+        - 'app1:8000'
+        - 'app2:8000'
+        - 'app3:8000'
+      labels:
+        service: 'flask'
+
+  - job_name: 'nginx-exporter'
+    static_configs:
+      - targets: ['nginx-exporter:9113']  # NGINX metrics exporter (Member A must expose)
+        labels:
+          service: 'nginx'
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'host'
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          service: 'containers'
