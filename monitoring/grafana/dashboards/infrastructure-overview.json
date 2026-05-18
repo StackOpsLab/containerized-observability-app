@@ -55,24 +55,24 @@
     },
     {
       "id": 4,
-      "title": "Observed Compose Containers",
+      "title": "Observed Docker Containers",
       "type": "stat",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
       "targets": [
         {
-          "expr": "count(container_last_seen{container_label_com_docker_compose_service!=\"\"})"
+          "expr": "count(container_last_seen{id=~\"/docker/[a-f0-9]+\"})"
         }
       ]
     },
     {
       "id": 5,
-      "title": "Container CPU Usage (by service)",
+      "title": "Container CPU Usage (by container)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "targets": [
         {
-          "expr": "sum by (container_label_com_docker_compose_service) (rate(container_cpu_usage_seconds_total{container_label_com_docker_compose_service!=\"\"}[5m]))",
-          "legendFormat": "{{container_label_com_docker_compose_service}}"
+          "expr": "sum by (container_id) (label_replace(rate(container_cpu_usage_seconds_total{id=~\"/docker/[a-f0-9]+\",cpu=\"total\"}[5m]), \"container_id\", \"$1\", \"id\", \"/docker/([a-f0-9]{12}).*\"))",
+          "legendFormat": "{{container_id}}"
         }
       ],
       "fieldConfig": {
@@ -83,13 +83,13 @@
     },
     {
       "id": 6,
-      "title": "Container Memory (by service)",
+      "title": "Container Memory (by container)",
       "type": "timeseries",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "targets": [
         {
-          "expr": "sum by (container_label_com_docker_compose_service) (container_memory_working_set_bytes{container_label_com_docker_compose_service!=\"\"})",
-          "legendFormat": "{{container_label_com_docker_compose_service}}"
+          "expr": "sum by (container_id) (label_replace(container_memory_working_set_bytes{id=~\"/docker/[a-f0-9]+\"}, \"container_id\", \"$1\", \"id\", \"/docker/([a-f0-9]{12}).*\"))",
+          "legendFormat": "{{container_id}}"
         }
       ],
       "fieldConfig": {

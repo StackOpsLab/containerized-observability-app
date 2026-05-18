@@ -154,25 +154,25 @@ while time.time() < deadline:
     seen_jobs = {job for job, _ in targets}
     node_payload = query("node_cpu_seconds_total")
     cadvisor_payload = query("container_cpu_usage_seconds_total")
-    compose_label_payload = query(
-        'count(container_last_seen{container_label_com_docker_compose_service!=""})'
+    docker_container_payload = query(
+        'count(container_last_seen{id=~"/docker/[a-f0-9]+"})'
     )
-    compose_label_count = 0
-    if compose_label_payload["data"]["result"]:
-        compose_label_count = int(float(compose_label_payload["data"]["result"][0]["value"][1]))
+    docker_container_count = 0
+    if docker_container_payload["data"]["result"]:
+        docker_container_count = int(float(docker_container_payload["data"]["result"][0]["value"][1]))
 
     if (
         required_jobs.issubset(seen_jobs)
         and all(value == "1" for value in targets.values())
         and node_payload["data"]["result"]
         and cadvisor_payload["data"]["result"]
-        and compose_label_count > 0
+        and docker_container_count > 0
     ):
         break
     time.sleep(2)
 else:
     raise SystemExit(
-        "Prometheus did not expose all required jobs, metrics, and Docker Compose labels within 60 seconds"
+        "Prometheus did not expose all required jobs, metrics, and Docker container IDs within 60 seconds"
     )
 PY
 
