@@ -45,7 +45,7 @@ docker compose up -d --build
 - App: `http://127.0.0.1/`
 - Grafana: `http://127.0.0.1:3000`
 - Prometheus: `http://127.0.0.1:9090`
-- Loki: `http://127.0.0.1:3100`
+- Loki health check: `http://127.0.0.1:3100/ready`
 - NGINX exporter: `http://127.0.0.1:9113/metrics`
 
 Grafana login:
@@ -101,6 +101,8 @@ Grafana dashboards:
 
 - `Flask App Dashboard`
 - `Infrastructure Overview`
+
+Logs are viewed in Grafana Explore through the Loki datasource.
 
 Example Loki query in Grafana Explore:
 
