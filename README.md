@@ -80,6 +80,12 @@ for i in $(seq 1 6); do
 done
 ```
 
+PowerShell alternative:
+
+```powershell
+1..6 | ForEach-Object { (Invoke-WebRequest http://127.0.0.1/ -UseBasicParsing).Headers["X-App-Instance"] }
+```
+
 If you want `least connections`:
 
 ```bash
